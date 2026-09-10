@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+models/_infantry_blue_generated.xml
+captures/
+aim/cpp/build/
+aim/cpp/compile_commands.json

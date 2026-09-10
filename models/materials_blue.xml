@@ -1,0 +1,13 @@
+<mujoco>
+  <asset>
+    <material name="chassis" rgba="0.22 0.23 0.25 1" reflectance="0.10"/>
+    <material name="gimbal" rgba="0.26 0.27 0.29 1" reflectance="0.08"/>
+    <material name="wheel" rgba="0.16 0.16 0.18 1"/>
+    <material name="armor_body" rgba="0.10 0.10 0.11 1"/>
+    <material name="armor_light" rgba="0.03 0.20 1.0 1" emission="16"/>
+    <material name="enemy_light" rgba="1.0 0.03 0.01 1" emission="16"/>
+    <texture name="armor_number_tex" type="2d" file="3.png"/>
+    <material name="armor_number" texture="armor_number_tex" texuniform="false"
+              rgba="0.38 0.38 0.38 1" emission="0.12"/>
+  </asset>
+</mujoco>

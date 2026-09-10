@@ -1,0 +1,46 @@
+name: onboard
+width: 1280
+height: 720
+fovy_deg: 60.0
+fx: 623.5382907247958
+fy: 623.5382907247958
+cx: 640.0
+cy: 360.0
+distortion_model: plumb_bob
+D:
+- 0.0
+- 0.0
+- 0.0
+- 0.0
+- 0.0
+color_space: BGR8
+K:
+- - 623.5382907247958
+  - 0.0
+  - 640.0
+- - 0.0
+  - 623.5382907247958
+  - 360.0
+- - 0.0
+  - 0.0
+  - 1.0
+notes:
+  distortion: MuJoCo is ideal pinhole. D is exactly zero; do not undistort.
+  principal_point: 'Image center: cx=width/2, cy=height/2 (OpenGL convention).'
+  mujoco_frame: X right, Y up, Z back; looks along -Z.
+  opencv_frame: X right, Y down, Z forward. R_cv = diag(1,-1,-1) @ R_mj.
+  solvePnP: 'Use this K and D=0. Object points: armor number quad, meters.'
+  armor_number_corners_m:
+  - - 0.001
+    - -0.06
+    - -0.06
+  - - 0.001
+    - 0.06
+    - -0.06
+  - - 0.001
+    - 0.06
+    - 0.06
+  - - 0.001
+    - -0.06
+    - 0.06
+  armor_frame: 'Armor body: +X outward, +Z up. 120mm square number plate.'

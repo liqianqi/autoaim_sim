@@ -1,0 +1,192 @@
+<mujoco model="rm_infantry">
+  <compiler angle="degree" eulerseq="xyz" autolimits="true" boundmass="0.01" boundinertia="1e-6"
+            meshdir="../assets/meshes" texturedir="../assets/textures"/>
+
+  <option gravity="0 0 -9.81" timestep="0.002"/>
+
+  <default>
+    <geom condim="3" friction="1 0.05 0.01" solref="0.004 1"/>
+    <joint damping="0.2"/>
+    <default class="visual">
+      <geom type="mesh" contype="0" conaffinity="0" group="0"/>
+    </default>
+    <default class="collision">
+      <geom group="3" rgba="0.3 0.5 0.3 0.3"/>
+    </default>
+    <default class="armor">
+      <geom type="mesh" contype="0" conaffinity="0" group="1"/>
+    </default>
+    <!-- 18mm-wide luminous overlays; the source mesh strips are only 12mm wide. -->
+    <default class="armor_glow">
+      <geom type="box" size="0.001 0.009 0.030" contype="0" conaffinity="0" group="1"/>
+    </default>
+  </default>
+
+  <asset>
+    <mesh name="base_link" file="base_link.obj"/>
+    <mesh name="yaw_link" file="yaw_link.obj"/>
+    <mesh name="pitch_link" file="pitch_link.obj"/>
+    <mesh name="wheel_link" file="wheel_link.obj"/>
+    <mesh name="camera_link" file="camera_link.obj"/>
+    <mesh name="armor_base" file="armor_base.obj"/>
+    <mesh name="armor_light" file="armor_light.obj" inertia="shell"/>
+    <mesh name="armor_number" file="armor_number.obj" inertia="shell"/>
+  </asset>
+
+  <include file="materials_red.xml"/>
+
+  <visual>
+    <headlight ambient="0.32 0.32 0.35" diffuse="0.70 0.70 0.74" specular="0.12 0.12 0.12"/>
+    <rgba haze="0.16 0.17 0.19 1"/>
+    <global azimuth="140" elevation="-18" offwidth="1920" offheight="1080"/>
+  </visual>
+
+  <statistic extent="2.6" center="0 1.4 0.2"/>
+
+  <worldbody>
+    <light name="key" pos="1.4 -1.2 2.4" dir="-0.35 0.25 -1" diffuse="0.75 0.75 0.78" specular="0.18 0.18 0.18"/>
+    <light name="fill" pos="-1.6 1.6 1.8" dir="0.45 -0.25 -1" diffuse="0.40 0.40 0.44"/>
+    <light name="front" pos="0 0.6 1.0" dir="0 1 -0.4" diffuse="0.45 0.45 0.48"/>
+    <geom name="floor" type="plane" size="8 8 0.05" rgba="0.20 0.21 0.23 1" friction="1 0.05 0.01"/>
+    <geom name="back_wall" type="plane" pos="0 6.5 1.6" zaxis="0 -1 0" size="8 1.8 0.05" rgba="0.28 0.30 0.33 1"/>
+
+    <!-- Chassis mesh is +Y forward, +X left, +Z up. Lift so wheels sit on the floor. -->
+    <body name="infantry" pos="0 0 0.085">
+      <freejoint name="root"/>
+      <inertial pos="0 0 0.06" mass="16.6" diaginertia="0.45 0.55 0.40"/>
+      <geom class="visual" mesh="base_link" material="chassis"/>
+      <geom class="collision" type="box" size="0.22 0.24 0.07" pos="0 0 0.05"/>
+
+      <body name="armor_l" pos="0.2568 0 0.0463" quat="0.99144487 0 -0.13052616 0">
+        <geom class="armor" mesh="armor_base" material="armor_body"/>
+        <geom class="armor" mesh="armor_light" material="armor_light"/>
+        <geom class="armor_glow" pos="-0.0015 0.0642 0" material="armor_light"/>
+        <geom class="armor_glow" pos="-0.0015 -0.0642 0" material="armor_light"/>
+        <geom class="armor" mesh="armor_number" material="armor_number"/>
+        <geom class="collision" type="box" size="0.01 0.070 0.065" pos="-0.009 0 0"/>
+      </body>
+      <body name="armor_r" pos="-0.2568 0 0.0463" quat="0 -0.13052616 0 -0.99144487">
+        <geom class="armor" mesh="armor_base" material="armor_body"/>
+        <geom class="armor" mesh="armor_light" material="armor_light"/>
+        <geom class="armor_glow" pos="-0.0015 0.0642 0" material="armor_light"/>
+        <geom class="armor_glow" pos="-0.0015 -0.0642 0" material="armor_light"/>
+        <geom class="armor" mesh="armor_number" material="armor_number"/>
+        <geom class="collision" type="box" size="0.01 0.070 0.065" pos="-0.009 0 0"/>
+      </body>
+      <body name="armor_f" pos="0 0.2135 0.1246" quat="0.70105737 0.09229594 -0.09229594 0.70105740">
+        <geom class="armor" mesh="armor_base" material="armor_body"/>
+        <geom class="armor" mesh="armor_light" material="armor_light"/>
+        <geom class="armor_glow" pos="-0.0015 0.0642 0" material="armor_light"/>
+        <geom class="armor_glow" pos="-0.0015 -0.0642 0" material="armor_light"/>
+        <geom class="armor" mesh="armor_number" material="armor_number"/>
+        <geom class="collision" type="box" size="0.01 0.070 0.065" pos="-0.009 0 0"/>
+      </body>
+      <body name="armor_b" pos="0 -0.2114 0.1287" quat="0.70105740 -0.09229594 -0.09229594 -0.70105737">
+        <geom class="armor" mesh="armor_base" material="armor_body"/>
+        <geom class="armor" mesh="armor_light" material="armor_light"/>
+        <geom class="armor_glow" pos="-0.0015 0.0642 0" material="armor_light"/>
+        <geom class="armor_glow" pos="-0.0015 -0.0642 0" material="armor_light"/>
+        <geom class="armor" mesh="armor_number" material="armor_number"/>
+        <geom class="collision" type="box" size="0.01 0.070 0.065" pos="-0.009 0 0"/>
+      </body>
+
+      <!-- +Y is forward; names match track position. -->
+      <body name="wheel_lb" pos="0.1828 -0.1828 -0.0032" quat="0.92387954 0 0 0.38268342">
+        <joint name="wheel_lb" type="hinge" axis="0 1 0" damping="0.05"/>
+        <geom class="visual" mesh="wheel_link" material="wheel"/>
+        <geom class="collision" type="cylinder" size="0.078 0.018" euler="90 0 0"/>
+      </body>
+      <body name="wheel_rb" pos="-0.1828 -0.1828 -0.0032" quat="0.92387952 0 0 -0.38268347">
+        <joint name="wheel_rb" type="hinge" axis="0 1 0" damping="0.05"/>
+        <geom class="visual" mesh="wheel_link" material="wheel"/>
+        <geom class="collision" type="cylinder" size="0.078 0.018" euler="90 0 0"/>
+      </body>
+      <body name="wheel_lf" pos="0.1828 0.1828 -0.0032" quat="0.38268347 0 0 0.92387952">
+        <joint name="wheel_lf" type="hinge" axis="0 1 0" damping="0.05"/>
+        <geom class="visual" mesh="wheel_link" material="wheel"/>
+        <geom class="collision" type="cylinder" size="0.078 0.018" euler="90 0 0"/>
+      </body>
+      <body name="wheel_rf" pos="-0.1828 0.1828 -0.0032" quat="0.38268324 0 0 -0.92387961">
+        <joint name="wheel_rf" type="hinge" axis="0 1 0" damping="0.05"/>
+        <geom class="visual" mesh="wheel_link" material="wheel"/>
+        <geom class="collision" type="cylinder" size="0.078 0.018" euler="90 0 0"/>
+      </body>
+
+      <body name="yaw_link" pos="0 0 0.0955">
+        <inertial pos="0 0 0.06" mass="1.2" diaginertia="0.02 0.02 0.015"/>
+        <joint name="yaw" type="hinge" axis="0 0 1" range="-180 180" damping="0.8"/>
+        <geom class="visual" mesh="yaw_link" material="gimbal"/>
+        <geom class="collision" type="cylinder" size="0.05 0.08" pos="0 0 0.07"/>
+
+        <!-- Body stays unrotated so pitch hinge is world +X (left). Mesh +X is spun to +Y. -->
+        <body name="pitch_link" pos="0.0752 0 0.1680">
+          <inertial pos="0 0.04 0.02" mass="0.8" diaginertia="0.01 0.012 0.01"/>
+          <joint name="pitch" type="hinge" axis="1 0 0" range="-25 35" damping="0.6"/>
+          <geom class="visual" mesh="pitch_link" material="gimbal" euler="0 0 90"/>
+          <geom class="collision" type="box" size="0.05 0.07 0.04" pos="0 0.06 0.03"/>
+          <geom class="visual" mesh="camera_link" material="gimbal" pos="0 0.17 0.03" euler="0 0 90"/>
+          <camera name="onboard" pos="0 0.22 0.05" xyaxes="1 0 0 0 0 1" fovy="60"
+                  resolution="1280 720"/>
+        </body>
+      </body>
+    </body>
+
+    <!-- Full opposite-color infantry. mocap so Space can drive it kinematically. -->
+    <body name="target" mocap="true" pos="0 1.35 0.085" euler="0 0 180">
+      <geom class="visual" mesh="base_link" material="chassis"/>
+      <body name="target_armor_l" pos="0.2568 0 0.0463" quat="0.99144487 0 -0.13052616 0">
+        <geom class="armor" mesh="armor_base" material="armor_body"/>
+        <geom class="armor" mesh="armor_light" material="enemy_light"/>
+        <geom class="armor_glow" pos="-0.0015 0.0642 0" material="enemy_light"/>
+        <geom class="armor_glow" pos="-0.0015 -0.0642 0" material="enemy_light"/>
+        <geom class="armor" mesh="armor_number" material="armor_number"/>
+      </body>
+      <body name="target_armor_r" pos="-0.2568 0 0.0463" quat="0 -0.13052616 0 -0.99144487">
+        <geom class="armor" mesh="armor_base" material="armor_body"/>
+        <geom class="armor" mesh="armor_light" material="enemy_light"/>
+        <geom class="armor_glow" pos="-0.0015 0.0642 0" material="enemy_light"/>
+        <geom class="armor_glow" pos="-0.0015 -0.0642 0" material="enemy_light"/>
+        <geom class="armor" mesh="armor_number" material="armor_number"/>
+      </body>
+      <body name="target_armor_f" pos="0 0.2135 0.1246" quat="0.70105737 0.09229594 -0.09229594 0.70105740">
+        <geom class="armor" mesh="armor_base" material="armor_body"/>
+        <geom class="armor" mesh="armor_light" material="enemy_light"/>
+        <geom class="armor_glow" pos="-0.0015 0.0642 0" material="enemy_light"/>
+        <geom class="armor_glow" pos="-0.0015 -0.0642 0" material="enemy_light"/>
+        <geom class="armor" mesh="armor_number" material="armor_number"/>
+      </body>
+      <body name="target_armor_b" pos="0 -0.2114 0.1287" quat="0.70105740 -0.09229594 -0.09229594 -0.70105737">
+        <geom class="armor" mesh="armor_base" material="armor_body"/>
+        <geom class="armor" mesh="armor_light" material="enemy_light"/>
+        <geom class="armor_glow" pos="-0.0015 0.0642 0" material="enemy_light"/>
+        <geom class="armor_glow" pos="-0.0015 -0.0642 0" material="enemy_light"/>
+        <geom class="armor" mesh="armor_number" material="armor_number"/>
+      </body>
+      <geom class="visual" mesh="wheel_link" material="wheel" pos="0.1828 -0.1828 -0.0032" quat="0.92387954 0 0 0.38268342"/>
+      <geom class="visual" mesh="wheel_link" material="wheel" pos="-0.1828 -0.1828 -0.0032" quat="0.92387952 0 0 -0.38268347"/>
+      <geom class="visual" mesh="wheel_link" material="wheel" pos="0.1828 0.1828 -0.0032" quat="0.38268347 0 0 0.92387952"/>
+      <geom class="visual" mesh="wheel_link" material="wheel" pos="-0.1828 0.1828 -0.0032" quat="0.38268324 0 0 -0.92387961"/>
+      <body name="target_yaw" pos="0 0 0.0955">
+        <geom class="visual" mesh="yaw_link" material="gimbal"/>
+        <body name="target_pitch" pos="0.0752 0 0.1680">
+          <geom class="visual" mesh="pitch_link" material="gimbal" euler="0 0 90"/>
+          <geom class="visual" mesh="camera_link" material="gimbal" pos="0 0.17 0.03" euler="0 0 90"/>
+        </body>
+      </body>
+    </body>
+
+    <camera name="overview" pos="2.2 -1.6 1.15" xyaxes="0.58 0.81 0 -0.32 0.23 0.92" fovy="42"/>
+    <camera name="armor_front" pos="0 1.20 0.30" xyaxes="-1 0 0 0 0 1" fovy="35"/>
+    <camera name="armor_left" pos="1.20 0 0.28" xyaxes="0 1 0 0 0 1" fovy="35"/>
+    <camera name="enemy_view" pos="0 2.4 0.32" xyaxes="-1 0 0 0 0 1" fovy="28"/>
+  </worldbody>
+
+  <actuator>
+    <position name="yaw" joint="yaw" kp="80" dampratio="1" ctrlrange="-3.1416 3.1416"/>
+    <position name="pitch" joint="pitch" kp="60" dampratio="1" ctrlrange="-0.436 0.611"/>
+  </actuator>
+
+  <keyframe>
+    <key name="home" qpos="0 0 0.085 1 0 0 0  0 0 0 0  0 0"/>
+  </keyframe>
+</mujoco>
