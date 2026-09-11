@@ -2,6 +2,7 @@
 //   cmake -S aim/cpp -B aim/cpp/build && cmake --build aim/cpp/build
 //   ./aim/cpp/build/camera_example
 
+#include "ekf.h"
 #include "onboard_camera.hpp"
 #include "trtengine.h"
 
@@ -87,8 +88,38 @@ static Eigen::Vector3d rvecToRPY(const cv::Vec3d& rvec) {
             std::atan2(-n.y(), std::hypot(n.x(), n.z())), std::atan2(n.x(), n.z())};
 }
 
-// IPPE 两解里取重投影误差最小的（solvePnP 默认行为）。
-// 实测过用 R/P 先验挑解：噪声大时镜像解的 pitch 常常反而更接近 -15°，会选错，所以不用。
+// 装甲板姿态 = 绕相机 Y 转 yaw，再绕板自身 X 转 -15°（仰装），roll 固定 0。和 rvecToRPY 的约定一致。
+static cv::Vec3d yawToRvec(double yaw) {
+    const double p = -15 * kDeg;
+    const cv::Mat Rx = (cv::Mat_<double>(3, 3) << 1, 0, 0, 0, std::cos(p), -std::sin(p), 0, std::sin(p), std::cos(p));
+    const cv::Mat Ry = (cv::Mat_<double>(3, 3) << std::cos(yaw), 0, std::sin(yaw), 0, 1, 0, -std::sin(yaw), 0, std::cos(yaw));
+    cv::Vec3d rvec;
+    cv::Rodrigues(Ry * Rx, rvec);
+    return rvec;
+}
+
+// 同济 optimize_yaw：位置信 PnP，姿态锁 roll=0、pitch=-15°，只剩 yaw 一个自由度。
+// 在“板正对相机”的方位角 ±70° 内 1° 步进搜索，四角点重投影误差最小者胜。
+// 单板 PnP 的 yaw 之所以差，是因为它同时在解 6 个自由度，小板上 yaw 和 pitch/roll 互相补偿；锁死后就不会了。
+static double optimizeYaw(const std::vector<cv::Point2f>& uv, const cv::Vec3d& tvec) {
+    const double az = std::atan2(tvec[0], tvec[2]);  // 板正对相机时法向 yaw 就是它的方位角
+    double best_yaw = az, best_err = 1e18;
+    for (double yaw = az - 70 * kDeg; yaw <= az + 70 * kDeg; yaw += 1 * kDeg) {
+        std::vector<cv::Point2f> proj;
+        cv::projectPoints(kArmorPts, yawToRvec(yaw), tvec, cameraK(), cameraD(), proj);
+        double err = 0;
+        for (int i = 0; i < 4; ++i) {
+            err += cv::norm(proj[i] - uv[i]);
+        }
+        if (err < best_err) {
+            best_err = err;
+            best_yaw = yaw;
+        }
+    }
+    return best_yaw;
+}
+
+// IPPE 两解里取重投影误差最小的（solvePnP 默认行为），只用它的 tvec；姿态由 optimizeYaw 重解。
 static bool solveArmor(const Detection& d, ArmorPose& pose) {
     const auto uv = orderCorners(d);
     if (!cv::solvePnP(kArmorPts, uv, cameraK(), cameraD(), pose.rvec, pose.tvec, false,
@@ -98,7 +129,9 @@ static bool solveArmor(const Detection& d, ArmorPose& pose) {
     if (!std::isfinite(pose.tvec[2]) || pose.tvec[2] < 0.15) {
         return false;
     }
-    pose.rpy = rvecToRPY(pose.rvec);
+    const double yaw = optimizeYaw(uv, pose.tvec);
+    pose.rvec = yawToRvec(yaw);
+    pose.rpy = {0, -15 * kDeg, yaw};
     return true;
 }
 
@@ -127,6 +160,41 @@ static void drawPose(cv::Mat& img, const ArmorPose& pose) {
                   pose.rpy.y() / kDeg, pose.rpy.z() / kDeg, pose.tvec[2]);
     cv::putText(img, buf, ax[0] + cv::Point(12, -10), cv::FONT_HERSHEY_SIMPLEX, 0.5,
                 cv::Scalar(255, 255, 255), 1, cv::LINE_AA);
+}
+
+// 把 EKF 估出的整车画出来：车中心 + 四块装甲板的重投影框。
+// 当前板用 drawPose 画完整姿态（位置 = 中心 + 半径×yaw 方向，姿态 = yaw 与 -15° 仰装），其余黄色框。
+static void drawCar(cv::Mat& img, const EKF& ekf) {
+    const auto& s = ekf.state();
+    std::vector<cv::Point2f> uv;
+    cv::projectPoints(std::vector<cv::Point3f>{{float(s[0]), float(s[1]), float(s[2])}}, cv::Vec3d(),
+                      cv::Vec3d(), cameraK(), cameraD(), uv);
+    cv::circle(img, uv[0], 5, cv::Scalar(255, 0, 255), -1, cv::LINE_AA);
+    char buf[64];
+    std::snprintf(buf, sizeof(buf), "v_yaw %+.1f  r %.2f/%.2f", s[6], s[7], ekf.anotherR());
+    cv::putText(img, buf, uv[0] + cv::Point2f(10, -8), cv::FONT_HERSHEY_SIMPLEX, 0.5,
+                cv::Scalar(255, 0, 255), 1, cv::LINE_AA);
+
+    for (int i = 0; i < 4; ++i) {
+        Eigen::Vector3d p;
+        double yaw;
+        ekf.armor(i, p, yaw);
+        if (std::abs(yaw) > 100 * kDeg) {
+            // continue;  // 背面的板不画
+        }
+        ArmorPose pose;
+        pose.rvec = yawToRvec(yaw);
+        pose.tvec = {p.x(), p.y(), p.z()};
+        pose.rpy = {0, -15 * kDeg, yaw};
+        if (i == 0) {
+            drawPose(img, pose);
+            continue;
+        }
+        const auto quad = project(kArmorPts, pose);
+        for (size_t k = 0; k < 4; ++k) {
+            cv::line(img, quad[k], quad[(k + 1) % 4], cv::Scalar(0, 200, 255), 2, cv::LINE_AA);
+        }
+    }
 }
 
 int main() {
@@ -162,6 +230,9 @@ int main() {
     using Clock = std::chrono::steady_clock;
     const auto t_start = Clock::now();
     auto t_last = t_start;
+
+    EKF ekf;
+    int lost = 100;  // 连续丢失帧数；>=100 视为未跟踪
 
     while (true) {
         uint32_t seq = 0;
@@ -210,7 +281,23 @@ int main() {
             obj.id_ = d.cls;
             obj.color_ = d.cls < 6 ? 0 : 1;
             objects.push_back(obj);
-            drawPose(bgr, pose);
+        }
+
+        // 整车 EKF：观测 = 本帧所有敌方板 (x y z yaw)。未跟踪时用第一块初始化；跟踪中预测 + 更新。
+        std::vector<Eigen::Vector4d> zs;
+        for (const auto& o : objects) {
+            zs.emplace_back(o.gimbal_pos_.x(), o.gimbal_pos_.y(), o.gimbal_pos_.z(), o.gimbal_angle_.z());
+        }
+        ekf.setDt(dt);
+        if (lost >= 100) {
+            if (!zs.empty()) {
+                ekf.init(zs[0]);
+                lost = 0;
+            }
+        } else {
+            ekf.predict();
+            lost = ekf.update(zs) ? 0 : lost + 1;
+            drawCar(bgr, ekf);
         }
 
         char time_buf[48];

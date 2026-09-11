@@ -49,7 +49,7 @@ message(STATUS "TensorRT include: ${TENSORRT_INCLUDE_DIR}")
 message(STATUS "TensorRT nvinfer: ${TENSORRT_NVINFER}")
 message(STATUS "CUDA include: ${CUDAToolkit_INCLUDE_DIRS}")
 
-add_executable(camera_example camera_example.cpp trtengine.cpp)
+add_executable(camera_example camera_example.cpp trtengine.cpp ekf.cpp)
 target_include_directories(camera_example PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${TENSORRT_INCLUDE_DIR}

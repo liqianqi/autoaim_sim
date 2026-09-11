@@ -4,9 +4,15 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 import time
 from pathlib import Path
+
+# 这台机器 X 的 GLX 默认走 Intel iGPU (Mesa)，MuJoCo 离屏渲染 1280x720 要 130 ms/帧。
+# 用 PRIME render offload 把 GLX 上下文放到 NVIDIA 上，降到 2 ms。必须在 import mujoco/glfw 之前设置。
+os.environ.setdefault("__NV_PRIME_RENDER_OFFLOAD", "1")
+os.environ.setdefault("__GLX_VENDOR_LIBRARY_NAME", "nvidia")
 
 import mujoco
 import numpy as np
@@ -35,7 +41,7 @@ def quat_yaw(quat: np.ndarray) -> float:
 class TargetPatrol:
     """Sentry: left-right ping-pong at fixed range, plus continuous yaw spin."""
 
-    def __init__(self, half_range: float = 0.60, speed: float = 1.10, spin: float = 3.40):
+    def __init__(self, half_range: float = 0.40, speed: float = 4.65, spin: float = 20.0):
         self.half_range = half_range
         self.speed = speed
         self.spin = spin
@@ -164,7 +170,11 @@ def run(model, data, args) -> None:
             return
 
         try:
-            import mujoco.viewer
+            # 不能写 `import mujoco.viewer`：那会把 mujoco 变成 run() 的局部名，
+            # 让上面 --camera-only 分支里的 mujoco.mj_step 报 UnboundLocalError。
+            import importlib
+
+            importlib.import_module("mujoco.viewer")
         except Exception as exc:
             raise SystemExit(f"MuJoCo viewer unavailable: {exc}") from exc
 
