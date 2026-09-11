@@ -17,7 +17,7 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 
-static constexpr bool kIsBlue = true;
+static constexpr bool kIsBlue = false;
 static constexpr double kDeg = 3.14159265358979323846 / 180.0;
 
 static cv::Mat cameraK() {
@@ -135,7 +135,7 @@ int main() {
     bool have_last = false;
     cv::Mat bgr;
 
-    const std::string enginePath = "/home/ubuntu/yolov5_fourpoints/trt_cpp/best-fp32.engine";
+    const std::string enginePath = "/home/ubuntu/yolov5_fourpoints/runs/train/shufflev2-armor-sim/weights/best-fp32.engine";
     auto engineData = loadFile(enginePath);
     auto runtime = nvinfer1::createInferRuntime(gLogger);
     auto engine = runtime->deserializeCudaEngine(engineData.data(), engineData.size());
@@ -159,6 +159,10 @@ int main() {
         cudaStreamSynchronize(stream);
     }
 
+    using Clock = std::chrono::steady_clock;
+    const auto t_start = Clock::now();
+    auto t_last = t_start;
+
     while (true) {
         uint32_t seq = 0;
         double stamp = 0.0;
@@ -168,6 +172,11 @@ int main() {
         }
         last = seq;
         have_last = true;
+
+        const auto t_now = Clock::now();
+        const double t = std::chrono::duration<double>(t_now - t_start).count();
+        const double dt = std::chrono::duration<double>(t_now - t_last).count();
+        t_last = t_now;
 
         float gain = 0, padW = 0, padH = 0;
         cv::Mat resized = letterbox(bgr, gain, padW, padH);
@@ -204,6 +213,10 @@ int main() {
             drawPose(bgr, pose);
         }
 
+        char time_buf[48];
+        std::snprintf(time_buf, sizeof(time_buf), "t=%.3fs  dt=%.4fs", t, dt);
+        cv::putText(bgr, time_buf, {12, 28}, cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(255, 255, 255),
+                    1, cv::LINE_AA);
         cv::imshow("aim input (onboard)", bgr);
         if ((cv::waitKey(1) & 0xFF) == 27) {
             break;

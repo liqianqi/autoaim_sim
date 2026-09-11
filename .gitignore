@@ -2,6 +2,8 @@
 __pycache__/
 *.pyc
 models/_infantry_blue_generated.xml
+models/_infantry_*_gen.xml
+models/_materials_*_gen.xml
 captures/
 aim/cpp/build/
 aim/cpp/compile_commands.json

@@ -197,7 +197,7 @@ def main() -> None:
     parser.add_argument("--team", choices=("red", "blue"), default="red")
     parser.add_argument("--width", type=int, default=1280)
     parser.add_argument("--height", type=int, default=720)
-    parser.add_argument("--fps", type=int, default=30)
+    parser.add_argument("--fps", type=int, default=100)
     parser.add_argument("--camera-only", action="store_true", help="only the onboard window")
     parser.add_argument("--no-cam-window", action="store_true", help="publish shm, no OpenCV window")
     parser.add_argument("--no-shm", action="store_true")
