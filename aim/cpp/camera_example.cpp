@@ -98,8 +98,8 @@ static cv::Vec3d yawToRvec(double yaw) {
     return rvec;
 }
 
-// 同济 optimize_yaw：位置信 PnP，姿态锁 roll=0、pitch=-15°，只剩 yaw 一个自由度。
-// 在“板正对相机”的方位角 ±70° 内 1° 步进搜索，四角点重投影误差最小者胜。
+// 同济 optimize_yaw: 位置信 PnP，姿态锁 roll=0、pitch=-15°，只剩 yaw 一个自由度。
+// 在“板正对相机”的方位角 ±70° 内 1° 步进搜索, 四角点重投影误差最小者胜。
 // 单板 PnP 的 yaw 之所以差，是因为它同时在解 6 个自由度，小板上 yaw 和 pitch/roll 互相补偿；锁死后就不会了。
 static double optimizeYaw(const std::vector<cv::Point2f>& uv, const cv::Vec3d& tvec) {
     const double az = std::atan2(tvec[0], tvec[2]);  // 板正对相机时法向 yaw 就是它的方位角
@@ -119,7 +119,7 @@ static double optimizeYaw(const std::vector<cv::Point2f>& uv, const cv::Vec3d& t
     return best_yaw;
 }
 
-// IPPE 两解里取重投影误差最小的（solvePnP 默认行为），只用它的 tvec；姿态由 optimizeYaw 重解。
+// IPPE 两解里取重投影误差最小的（solvePnP 默认行为），只用它的 tvec; 姿态由 optimizeYaw 重解。
 static bool solveArmor(const Detection& d, ArmorPose& pose) {
     const auto uv = orderCorners(d);
     if (!cv::solvePnP(kArmorPts, uv, cameraK(), cameraD(), pose.rvec, pose.tvec, false,
